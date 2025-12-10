@@ -1,0 +1,14 @@
+{
+  "name": "tt-dl",
+  "version": "1.0.0",
+  "description": "TikTok Downloader menggunakan API ryzumi.vip (aman via proxy)",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/tt-dl.git"
+  },
+  "license": "MIT"
+}
