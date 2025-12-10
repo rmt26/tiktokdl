@@ -1,6 +1,5 @@
-// api/download.js
+// api/download.js — Versi diperbaiki
 export default async function handler(req) {
-  // Hanya izinkan method GET
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ success: false, message: 'Method not allowed' }), {
       status: 405,
@@ -19,31 +18,44 @@ export default async function handler(req) {
   }
 
   try {
-    // ✅ Forward ke ryzumi.vip dari server (aman, tanpa CORS)
+    // ✅ Gunakan fetch dengan timeout dan header yang lebih realistis
     const ryzumiUrl = `https://api.ryzumi.vip/api/downloader/ttdl?url=${encodeURIComponent(url)}`;
     
     const res = await fetch(ryzumiUrl, {
+      method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TikTokDownloader/1.0)',
-        'Accept': 'application/json'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+        'Referer': 'https://www.tiktok.com/',
+        'Origin': 'https://www.tiktok.com'
       },
       redirect: 'follow',
-      // Optional: tambahkan timeout jika perlu
+      signal: AbortSignal.timeout(8000) // Timeout 8 detik
     });
 
     if (!res.ok) {
-      throw new Error(`API error: ${res.status}`);
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
 
-    const data = await res.json();
+    // ✅ Ambil teks dulu, baru parse JSON
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('[JSON Parse Error]', parseErr.message, 'Raw response:', text);
+      throw new Error('API tidak mengembalikan data JSON yang valid.');
+    }
 
-    if (!data.success || data.data?.code !== 0) {
+    // ✅ Validasi struktur data
+    if (!data.success || !data.data?.code === 0) {
       throw new Error(data.data?.msg || 'Gagal memproses video');
     }
 
     const video = data.data.data;
 
-    // ✅ Hanya return data yang diperlukan (minimal & aman)
+    // ✅ Hanya kirim field penting
     return new Response(JSON.stringify({
       success: true,
       id: video.id,
@@ -53,16 +65,15 @@ export default async function handler(req) {
         nickname: video.author.nickname,
         avatar: video.author.avatar
       },
-      play: video.play,          // no watermark
-      wmplay: video.wmplay,      // with watermark
-      hdplay: video.hdplay,      // HD no WM
-      music: video.music         // audio
+      play: video.play,
+      wmplay: video.wmplay,
+      hdplay: video.hdplay,
+      music: video.music
     }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300', // cache 5 menit
-        // ✅ Lindungi dari abuse: batasi akses
+        'Cache-Control': 'public, max-age=300',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
         'Vary': 'Origin'
@@ -70,10 +81,10 @@ export default async function handler(req) {
     });
 
   } catch (err) {
-    console.error('[API Error]', err.message);
+    console.error('[API ERROR]', err.message); // Log ke server Vercel
     return new Response(JSON.stringify({
       success: false,
-      message: 'Gagal mengambil video. Coba lagi nanti.'
+      message: 'Gagal memproses video. Coba lagi nanti atau gunakan URL lain.'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
