@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>tt.dl — TikTok Downloader</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #FE2C55;
+      --dark: #121212;
+      --gray: #888;
+      --light: #fafafa;
+      --card: #fff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--light);
+      color: var(--dark);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin: 40px 0 30px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #FE2C55, #FF5733);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .subtitle {
+      color: var(--gray);
+      margin-top: 8px;
+      font-size: 16px;
+    }
+    .input-box {
+      background: white;
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      display: flex;
+      gap: 8px;
+    }
+    #urlInput {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      border-radius: 12px;
+    }
+    #urlInput::placeholder {
+      color: #aaa;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0 24px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    #status {
+      text-align: center;
+      margin: 24px 0;
+      min-height: 24px;
+      font-weight: 500;
+    }
+    .loading { color: #1976d2; }
+    .error { color: #d32f2f; }
+    .success { color: #2e7d32; }
+
+    .result {
+      background: var(--card);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+      display: none;
+    }
+    .video-header {
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+    }
+    .avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #eee;
+    }
+    .info {
+      flex: 1;
+    }
+    .author {
+      font-weight: 600;
+      font-size: 18px;
+    }
+    .handle {
+      color: var(--gray);
+      margin-top: 4px;
+    }
+    .title {
+      margin: 12px 0;
+      font-size: 16px;
+      line-height: 1.4;
+      color: #333;
+    }
+    .preview {
+      width: 100%;
+      background: #000;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 20px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .btn-nowm { background: #e8f5e9; color: #2e7d32; }
+    .btn-wm   { background: #fff3e0; color: #e65100; }
+    .btn-hd   { background: #e3f2fd; color: #1976d2; }
+    .btn-audio{ background: #f3e5f5; color: #7b1fa2; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: var(--gray);
+      font-size: 14px;
+    }
+    @media (max-width: 600px) {
+      .actions { grid-template-columns: 1fr; }
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>tt.dl</h1>
+      <p class="subtitle">Download TikTok tanpa watermark. Cepat & Gratis.</p>
+    </header>
+
+    <div class="input-box">
+      <input type="url" id="urlInput" placeholder="Tempel link TikTok di sini (vt.tiktok.com atau tiktok.com)" />
+      <button id="downloadBtn" onclick="fetchVideo()">Unduh</button>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="result" id="result">
+      <div class="video-header">
+        <img id="avatar" class="avatar" src="" alt="Avatar" onerror="this.style.display='none'" />
+        <div class="info">
+          <div class="author" id="author">-</div>
+          <div class="handle" id="handle">@-</div>
+          <div class="title" id="title">-</div>
+        </div>
+      </div>
+      <video class="preview" id="preview" controls></video>
+      <div class="actions">
+        <a id="btn-nowm" class="btn btn-nowm" href="#" download>
+          <i class="fas fa-download"></i> No Watermark
+        </a>
+        <a id="btn-wm" class="btn btn-wm" href="#" download>
+          <i class="fas fa-water"></i> With Watermark
+        </a>
+        <a id="btn-hd" class="btn btn-hd" href="#" download>
+          <i class="fas fa-video"></i> HD
+        </a>
+        <a id="btn-audio" class="btn btn-audio" href="#" download>
+          <i class="fas fa-music"></i> Audio
+        </a>
+      </div>
+    </div>
+
+    <footer>
+      <p>tt.dl — TikTok Downloader • <span style="color:#aaa">Tidak menyimpan data Anda</span></p>
+    </footer>
+  </div>
+
+  <script>
+    const statusDiv = document.getElementById('status');
+    const resultDiv = document.getElementById('result');
+    const btn = document.getElementById('downloadBtn');
+
+    async function fetchVideo() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) return showStatus('⚠️ Masukkan URL TikTok', 'error');
+
+      showStatus('⏳ Sedang memproses...', 'loading');
+      btn.disabled = true;
+
+      try {
+        // ✅ Panggil API internal (aman, tanpa expose ryzumi.vip)
+        const res = await fetch(`/api/download?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.message || 'Gagal memproses');
+
+        const { id, title, author, play, wmplay, hdplay, music } = data;
+
+        // Update UI
+        document.getElementById('author').textContent = author.nickname;
+        document.getElementById('handle').textContent = `@${author.unique_id}`;
+        document.getElementById('title').textContent = title || '—';
+        document.getElementById('avatar').src = author.avatar;
+
+        const preview = document.getElementById('preview');
+        preview.src = play;
+        preview.load();
+
+        // Set download links
+        setDownloadLink('btn-nowm', play, `tt_${id}_nowm.mp4`);
+        setDownloadLink('btn-wm', wmplay, `tt_${id}_wm.mp4`);
+        setDownloadLink('btn-hd', hdplay || play, `tt_${id}_hd.mp4`);
+        setDownloadLink('btn-audio', music, `tt_${id}.mp3`);
+
+        resultDiv.style.display = 'block';
+        showStatus('✅ Siap diunduh!', 'success');
+
+      } catch (err) {
+        console.error(err);
+        showStatus(`❌ ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function setDownloadLink(id, url, filename) {
+      if (url) {
+        document.getElementById(id).href = url;
+        document.getElementById(id).download = filename;
+      } else {
+        document.getElementById(id).style.display = 'none';
+      }
+    }
+
+    function showStatus(text, type) {
+      statusDiv.textContent = text;
+      statusDiv.className = type;
+    }
+
+    // Enter key support
+    document.getElementById('urlInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') fetchVideo();
+    });
+  </script>
+</body>
+</html>
